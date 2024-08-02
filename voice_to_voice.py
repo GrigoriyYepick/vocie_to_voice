@@ -1,14 +1,16 @@
 import uuid
+import os
+import sys
 import gradio as gr
 import assemblyai as aai
 from translate import Translator
 from elevenlabs import VoiceSettings
 from elevenlabs.client import ElevenLabs
 from pathlib import Path
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 def voice_to_voice(audio_file):
     transcription_response = audio_transcription(audio_file)
@@ -18,12 +20,15 @@ def voice_to_voice(audio_file):
 
     text = transcription_response.text
 
-    translation = translate_text(text, "en", "fr")
-    result_file_path = text_to_speach(translation)
+    paths = []
+    languages = ["fr", "it", "es"]
 
-    path = Path(result_file_path)
+    for lang in languages:
+        translation = translate_text(text, "en", lang)
+        result_file_path = text_to_speach(translation)
+        paths.append(Path(result_file_path))
 
-    return path, path, path
+    return paths
 
 
 def audio_transcription(audio_file):
@@ -79,6 +84,17 @@ def text_to_speach(text):
     return save_file_path
 
 
+def cleanup(folder_path):
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".mp3"):
+            file_path = os.path.join(folder_path, filename)
+            try:
+                os.remove(file_path)
+                print(f"Deleted: {filename}")
+            except OSError as e:
+                print(f"Error deleting {filename}: {e}")
+
+
 audio_input = gr.Audio(
     sources=["microphone"],
     type="filepath"
@@ -91,4 +107,6 @@ demo = gr.Interface(
 )
 
 if __name__ == "__main__":
+    cleanup(os.getcwd())
     demo.launch()
+    cleanup(os.getcwd())
